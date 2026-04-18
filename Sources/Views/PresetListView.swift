@@ -4,6 +4,7 @@ struct PresetListView: View {
     @EnvironmentObject var appState: AppState
     @Binding var expandedPresetID: UUID?
     @State private var sortedPresets: [Preset] = []
+    @State private var scrollPosition: UUID?
 
     var body: some View {
         ScrollView {
@@ -24,15 +25,24 @@ struct PresetListView: View {
                             if wasExpanded, appState.previewingPresetID == preset.id {
                                 endPreview()
                             }
+                            // Scroll expanded row into view after animation settles.
+                            if !wasExpanded {
+                                scrollPosition = nil
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    withAnimation { scrollPosition = preset.id }
+                                }
+                            }
                         }
                     )
+                    .id(preset.id)
                     Divider()
                 }
 
                 Button {
                     let newPreset = Preset(
                         name: "New Preset",
-                        combinedBrightness: 70,
+                        hardwareBrightness: 70,
+                        hardwareContrast: 75,
                         nightShift: 0
                     )
                     appState.addPreset(newPreset)
@@ -42,6 +52,9 @@ struct PresetListView: View {
                     appState.onScheduleChanged?()
                     withAnimation(.easeInOut(duration: 0.15)) {
                         expandedPresetID = newPreset.id
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        withAnimation { scrollPosition = newPreset.id }
                     }
                 } label: {
                     Label("Add Preset", systemImage: "plus")
@@ -53,8 +66,9 @@ struct PresetListView: View {
                 .foregroundStyle(Color.accentColor)
             }
         }
-        // ≈ 1.5 × collapsed row (48pt) + 1 × expanded editor (260pt) ≈ 332
-        .frame(maxHeight: 332)
+        // ≈ 1 × expanded row (254pt) + 1 × collapsed row (48pt) ≈ 302
+        .frame(maxHeight: 310)
+        .scrollPosition(id: $scrollPosition)
         .onAppear { refreshSort() }
         .onChange(of: appState.presets.count) { refreshSort() }
     }
@@ -181,7 +195,7 @@ private struct PresetCardRow: View {
 
     private var subtitle: String {
         let time = appState.schedule.first(where: { $0.presetID == preset.id })?.timeString ?? "—"
-        return "\(time) · b: \(preset.combinedBrightness)% · n: \(preset.nightShift)%"
+        return "\(time) · br: \(preset.hardwareBrightness)% · co: \(preset.hardwareContrast)% · ns: \(preset.nightShift)%"
     }
 
     private func commitName() {
@@ -216,7 +230,7 @@ private struct PresetEditorBody: View {
     @State private var draft: Preset
     @State private var scheduleEntry: ScheduleEntry?
     @State private var scheduleTime: Date = Date()
-    @State private var brightnessApplyTask: Task<Void, Never>?
+    @State private var sliderApplyTask: Task<Void, Never>?
 
     init(preset: Preset) {
         self.preset = preset
@@ -269,11 +283,23 @@ private struct PresetEditorBody: View {
 
             // Sliders
             LabeledSlider(
-                label: "Brightness (Combined)",
-                value: $draft.combinedBrightness,
-                onLiveChange: { _ in
+                label: "Brightness",
+                value: $draft.hardwareBrightness,
+                onLiveChange: { newValue in
                     guard liveApply else { return }
-                    scheduleBrightnessApply()
+                    scheduleApply("hardwareBrightness", value: newValue)
+                },
+                onCommit: {
+                    persist()
+                    if liveApply { applyNow() }
+                }
+            )
+            LabeledSlider(
+                label: "Contrast",
+                value: $draft.hardwareContrast,
+                onLiveChange: { newValue in
+                    guard liveApply else { return }
+                    scheduleApply("hardwareContrast", value: newValue)
                 },
                 onCommit: {
                     persist()
@@ -285,7 +311,6 @@ private struct PresetEditorBody: View {
                 value: $draft.nightShift,
                 onLiveChange: { newValue in
                     guard liveApply else { return }
-                    // Night Shift is instant, no debounce.
                     NightShiftController.setStrength(newValue)
                 },
                 onCommit: { persist() }
@@ -342,7 +367,7 @@ private struct PresetEditorBody: View {
         }
         .onDisappear {
             if isPreviewing { endPreview() }
-            brightnessApplyTask?.cancel()
+            sliderApplyTask?.cancel()
         }
     }
 
@@ -393,7 +418,7 @@ private struct PresetEditorBody: View {
     }
 
     private func endPreview() {
-        brightnessApplyTask?.cancel()
+        sliderApplyTask?.cancel()
         appState.previewingPresetID = nil
         // For the active preset, re-apply it (restores monitor after any
         // interrupted preview drift). For others, scheduler snaps back.
@@ -403,20 +428,21 @@ private struct PresetEditorBody: View {
     private func applyNow() {
         let snapshot = draft
         let controller = DDCController(cliPath: appState.cliPath, displayName: appState.displayName)
-        brightnessApplyTask?.cancel()
-        brightnessApplyTask = Task { await controller.apply(snapshot) }
+        sliderApplyTask?.cancel()
+        sliderApplyTask = Task { await controller.apply(snapshot) }
     }
 
-    private func scheduleBrightnessApply() {
-        brightnessApplyTask?.cancel()
-        let snapshot = draft
+    /// Debounced single-param apply — cancels any in-flight task so rapid slider
+    /// movement only sends the final value, without touching other params.
+    private func scheduleApply(_ param: String, value: Int) {
+        sliderApplyTask?.cancel()
         let cliPath = appState.cliPath
         let displayName = appState.displayName
-        brightnessApplyTask = Task {
+        sliderApplyTask = Task {
             try? await Task.sleep(nanoseconds: 25_000_000)
             guard !Task.isCancelled else { return }
             let controller = DDCController(cliPath: cliPath, displayName: displayName)
-            await controller.apply(snapshot)
+            await controller.applySingle(param, value: value)
         }
     }
 }
@@ -453,7 +479,6 @@ private struct LabeledSlider: View {
             .controlSize(.small)
             Text("\(value)%")
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
                 .frame(width: 32, alignment: .trailing)
         }
     }

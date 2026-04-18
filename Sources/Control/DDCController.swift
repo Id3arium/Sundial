@@ -12,8 +12,19 @@ class DDCController {
     // MARK: - Public API
 
     func apply(_ preset: Preset) async {
-        await setPercent("combinedBrightness", value: preset.combinedBrightness)
+        await setPercent("hardwareBrightness", value: preset.hardwareBrightness)
+        await setPercent("hardwareContrast", value: preset.hardwareContrast)
         NightShiftController.setStrength(preset.nightShift)
+    }
+
+    /// Apply only a single parameter — used during live slider drag to avoid
+    /// re-sending unchanged params and triggering BetterDisplay's poll/snap.
+    func applySingle(_ param: String, value: Int) async {
+        if param == "nightShift" {
+            NightShiftController.setStrength(value)
+        } else {
+            await setPercent(param, value: value)
+        }
     }
 
     /// Smoothly interpolate from `from` to `to` over `duration` seconds.
@@ -35,10 +46,7 @@ class DDCController {
     // MARK: - Private
 
     private func setPercent(_ param: String, value: Int) async {
-        // Remap [0,100] → [15,100]: 0% combined brightness is a pitch-black unrecoverable screen
-        let mapped = 15 + (value * 85 / 100)
-        // betterdisplaycli set -namelike=GIGABYTE -combinedBrightness=70%
-        run([cliPath, "set", "-namelike=\(displayName)", "-\(param)=\(mapped)%"])
+        run([cliPath, "set", "-namelike=\(displayName)", "-\(param)=\(value)%"])
         try? await Task.sleep(nanoseconds: 25_000_000)
     }
 

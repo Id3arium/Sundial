@@ -53,6 +53,9 @@ struct MenuBarView: View {
             .padding(.vertical, 10)
         }
         .frame(width: 320)
+        .onAppear {
+            expandedPresetID = appState.activePresetID
+        }
         .onDisappear {
             // Popover closed — always end any active preview so the monitor
             // snaps back to the scheduled preset.

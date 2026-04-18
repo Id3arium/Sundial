@@ -4,12 +4,13 @@ struct Preset: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var name: String
 
-    /// Combined brightness (0–100) — BetterDisplay blends hardware backlight
-    /// and software dimming together. Remapped to [15,100] on apply so the
-    /// screen never goes pitch black.
-    /// Driven via BetterDisplay CLI (`-combinedBrightness`).
-    /// Codable key kept as `softwareBrightness` for backward compat with old configs.
-    var combinedBrightness: Int
+    /// Brightness (0–100). Controls the monitor's actual backlight via DDC.
+    /// Driven via BetterDisplay CLI (`-hardwareBrightness`).
+    var hardwareBrightness: Int
+
+    /// Hardware contrast (0–100). Controls monitor contrast via DDC (free feature).
+    /// Driven via BetterDisplay CLI (`-hardwareContrast`).
+    var hardwareContrast: Int
 
     /// Night Shift strength (0–100). 0 = off, 100 = maximum warmth.
     /// Driven via macOS's built-in Night Shift (CoreBrightness private framework).
@@ -20,10 +21,10 @@ struct Preset: Identifiable, Codable, Equatable {
     var enabled: Bool = true
 
     static let defaults: [Preset] = [
-        Preset(name: "Morning", combinedBrightness: 50, nightShift: 30),
-        Preset(name: "Day",     combinedBrightness: 90, nightShift: 0),
-        Preset(name: "Evening", combinedBrightness: 60, nightShift: 50),
-        Preset(name: "Night",   combinedBrightness: 25, nightShift: 90),
+        Preset(name: "Morning", hardwareBrightness: 70, hardwareContrast: 75, nightShift: 30),
+        Preset(name: "Day",     hardwareBrightness: 100, hardwareContrast: 75, nightShift: 0),
+        Preset(name: "Evening", hardwareBrightness: 60, hardwareContrast: 70, nightShift: 50),
+        Preset(name: "Night",   hardwareBrightness: 30, hardwareContrast: 60, nightShift: 90),
     ]
 
     /// Linear interpolation toward another preset (used for smooth transitions)
@@ -32,23 +33,24 @@ struct Preset: Identifiable, Codable, Equatable {
         return Preset(
             id: id,
             name: name,
-            combinedBrightness: lerpInt(combinedBrightness, other.combinedBrightness),
+            hardwareBrightness: lerpInt(hardwareBrightness, other.hardwareBrightness),
+            hardwareContrast:   lerpInt(hardwareContrast, other.hardwareContrast),
             nightShift:         lerpInt(nightShift, other.nightShift),
             enabled:            enabled
         )
     }
 
-    // MARK: - Codable (manual to default `enabled` to true for older configs)
+    // MARK: - Codable
 
     enum CodingKeys: String, CodingKey {
-        case id, name, nightShift, enabled
-        case combinedBrightness = "softwareBrightness"
+        case id, name, hardwareBrightness, hardwareContrast, nightShift, enabled
     }
 
-    init(id: UUID = UUID(), name: String, combinedBrightness: Int, nightShift: Int, enabled: Bool = true) {
+    init(id: UUID = UUID(), name: String, hardwareBrightness: Int, hardwareContrast: Int, nightShift: Int, enabled: Bool = true) {
         self.id = id
         self.name = name
-        self.combinedBrightness = combinedBrightness
+        self.hardwareBrightness = hardwareBrightness
+        self.hardwareContrast = hardwareContrast
         self.nightShift = nightShift
         self.enabled = enabled
     }
@@ -57,7 +59,8 @@ struct Preset: Identifiable, Codable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try c.decode(UUID.self, forKey: .id)
         self.name = try c.decode(String.self, forKey: .name)
-        self.combinedBrightness = try c.decode(Int.self, forKey: .combinedBrightness)
+        self.hardwareBrightness = (try? c.decode(Int.self, forKey: .hardwareBrightness)) ?? 70
+        self.hardwareContrast   = (try? c.decode(Int.self, forKey: .hardwareContrast)) ?? 75
         self.nightShift = try c.decode(Int.self, forKey: .nightShift)
         self.enabled = (try? c.decode(Bool.self, forKey: .enabled)) ?? true
     }
