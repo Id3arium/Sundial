@@ -7,17 +7,19 @@ class Scheduler {
     private var transitionTask: Task<Void, Never>?
     private var lastAppliedEntryID: UUID?
     private var lastAppliedPreset: Preset?
+    private var isStarted = false
 
     private weak var state: AppState?
     private var controller: DDCController?
 
     func start(state: AppState, controller: DDCController) {
+        guard !isStarted else { return }
+        isStarted = true
+
         self.state = state
         self.controller = controller
 
-        observeWake(state: state, controller: controller)
-
-        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
                 self.tick(state: state, controller: controller)
@@ -25,6 +27,32 @@ class Scheduler {
         }
         // Fire immediately
         tick(state: state, controller: controller)
+
+        // On wake, force a full re-apply of the active preset, then kick off rapid
+        // ticks so the display keeps correcting as the panel settles.
+        //
+        // The first apply is unconditional (not gated on `matches()`) on purpose:
+        // `matches()` only reads back brightness/contrast over DDC and has no
+        // visibility into Night Shift, so a tick-only wake path would never correct
+        // Night Shift when brightness/contrast already happen to match. A full
+        // `apply()` is idempotent and cheap, so applying it every wake is safe.
+        for name in [NSWorkspace.didWakeNotification, NSWorkspace.screensDidWakeNotification] {
+            NSWorkspace.shared.notificationCenter.addObserver(
+                forName: name, object: nil, queue: .main
+            ) { [weak self] _ in
+                guard let self else { return }
+                Task { @MainActor in
+                    self.forceApplyActive(state: state, controller: controller)
+                    // Rapid ticks at 1s, 2s, 3s, 4s, 5s after wake catch any
+                    // brightness/contrast drift as the panel finishes waking.
+                    for _ in 0..<5 {
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                        guard !Task.isCancelled else { return }
+                        self.tick(state: state, controller: controller)
+                    }
+                }
+            }
+        }
     }
 
     func stop() {
@@ -58,10 +86,45 @@ class Scheduler {
     func recompute() {
         guard let state, let controller else { return }
         guard state.previewingPresetID == nil else { return }
-        // Force the tick to act even if the entry ID hasn't changed — the
-        // underlying preset's enabled state might have.
         lastAppliedEntryID = nil
-        tick(state: state, controller: controller)
+
+        guard let entry = activeEntry(in: state.schedule, presets: state.presets) else { return }
+        guard let preset = state.preset(for: entry.presetID) else { return }
+
+        lastAppliedEntryID = entry.id
+        lastAppliedPreset = preset
+        state.activePresetID = preset.id
+
+        transitionTask?.cancel()
+        transitionTask = Task {
+            await controller.apply(preset)
+        }
+    }
+
+    // MARK: - Wake
+
+    /// Force a full apply of the active preset, bypassing the `matches()` dedupe.
+    /// Used on wake so Night Shift (which `matches()` can't read back) is corrected
+    /// even when brightness/contrast already match. Respects the user's
+    /// "Re-apply preset after sleep/wake" setting and any active preview.
+    private func forceApplyActive(state: AppState, controller: DDCController) {
+        guard state.applyOnWake else { return }
+        guard state.previewingPresetID == nil else { return }
+
+        controller.cliPath = state.cliPath
+        controller.displayName = state.displayName
+
+        guard let entry = activeEntry(in: state.schedule, presets: state.presets) else { return }
+        guard let preset = state.preset(for: entry.presetID) else { return }
+
+        lastAppliedEntryID = entry.id
+        lastAppliedPreset = preset
+        state.activePresetID = preset.id
+
+        transitionTask?.cancel()
+        transitionTask = Task {
+            await controller.apply(preset)
+        }
     }
 
     // MARK: - Tick
@@ -74,42 +137,29 @@ class Scheduler {
         controller.displayName = state.displayName
 
         guard let entry = activeEntry(in: state.schedule, presets: state.presets) else { return }
-        guard entry.id != lastAppliedEntryID else { return }
         guard let preset = state.preset(for: entry.presetID) else { return }
 
-        let previous = lastAppliedPreset
-        lastAppliedEntryID = entry.id
-        lastAppliedPreset = preset
-        state.activePresetID = preset.id
+        if entry.id != lastAppliedEntryID {
+            // Schedule moved to a new entry — smooth transition.
+            let previous = lastAppliedPreset
+            lastAppliedEntryID = entry.id
+            lastAppliedPreset = preset
+            state.activePresetID = preset.id
 
-        transitionTask?.cancel()
-        transitionTask = Task {
-            if let from = previous {
-                await controller.applySmooth(from: from, to: preset, duration: 60)
-            } else {
-                await controller.apply(preset)
-            }
-        }
-    }
-
-    // MARK: - Wake handling
-
-    private func observeWake(state: AppState, controller: DDCController) {
-        NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didWakeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
-                guard state.applyOnWake,
-                      state.previewingPresetID == nil,
-                      let preset = state.preset(for: state.activePresetID) else { return }
-                // Snap (no smooth) after wake — monitor may have reset DDC state
-                self.transitionTask?.cancel()
-                self.transitionTask = Task {
+            transitionTask?.cancel()
+            transitionTask = Task {
+                if let from = previous {
+                    await controller.applySmooth(from: from, to: preset, duration: 60)
+                } else {
                     await controller.apply(preset)
                 }
+            }
+        } else if !controller.matches(preset) {
+            // Same entry, but the display drifted (wake from sleep, reboot,
+            // BetterDisplay restart, manual override, etc.) — re-apply.
+            transitionTask?.cancel()
+            transitionTask = Task {
+                await controller.apply(preset)
             }
         }
     }

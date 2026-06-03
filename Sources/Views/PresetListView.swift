@@ -250,7 +250,7 @@ private struct PresetEditorBody: View {
     }
 
     /// True when slider changes should apply live to the monitor.
-    private var liveApply: Bool { isPreviewing }
+    private var liveApply: Bool { isActivePreset || isPreviewing }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -358,12 +358,6 @@ private struct PresetEditorBody: View {
         .opacity(draft.enabled ? 1.0 : 0.6)
         .onAppear {
             loadSchedule()
-            // If this is the active preset, editing is live by definition.
-            // Set preview flag so the scheduler stays out of the way and our
-            // slider live-apply path works uniformly.
-            if isActivePreset {
-                appState.previewingPresetID = draft.id
-            }
         }
         .onDisappear {
             if isPreviewing { endPreview() }

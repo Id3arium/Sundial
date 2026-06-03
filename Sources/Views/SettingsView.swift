@@ -46,7 +46,16 @@ struct SettingsView: View {
                         .onChange(of: appState.launchAtLogin) { _, enabled in
                             do {
                                 if enabled {
+                                    // Only let a Release build (installed to /Applications via
+                                    // build.sh) claim the login item. A Debug build runs from an
+                                    // ephemeral DerivedData path; registering it there means a
+                                    // later Clean Build / Xcode prune leaves macOS launching a
+                                    // stale or missing binary on the next reboot.
+                                    #if DEBUG
+                                    print("[Sundial] Debug build — skipping login-item registration so it can't bind a DerivedData path. Install via ./build.sh to enable launch-at-login from /Applications.")
+                                    #else
                                     try SMAppService.mainApp.register()
+                                    #endif
                                 } else {
                                     try SMAppService.mainApp.unregister()
                                 }

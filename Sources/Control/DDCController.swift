@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 class DDCController {
     var cliPath: String
     var displayName: String
@@ -43,11 +44,45 @@ class DDCController {
         }
     }
 
+    /// Returns true if the display's actual DDC brightness and contrast match the preset.
+    /// Uses raw DDC reads (VCP codes) to bypass BetterDisplay's cache.
+    func matches(_ preset: Preset) -> Bool {
+        guard let brightness = readDDC(vcp: 0x10),
+              let contrast   = readDDC(vcp: 0x12) else { return false }
+        return abs(brightness - preset.hardwareBrightness) <= 1
+            && abs(contrast   - preset.hardwareContrast)   <= 1
+    }
+
     // MARK: - Private
+
+    /// Read a raw DDC value from the monitor via VCP code. Returns the integer
+    /// value directly from the display hardware, bypassing BetterDisplay's cache.
+    /// VCP 0x10 = brightness, 0x12 = contrast.
+    private func readDDC(vcp: Int) -> Int? {
+        let hex = String(format: "0x%02X", vcp)
+        let output = runCapture([cliPath, "get", "-nameLike=\(displayName)", "-ddc", "-vcp=\(hex)"])
+        return Int(output.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
 
     private func setPercent(_ param: String, value: Int) async {
         run([cliPath, "set", "-namelike=\(displayName)", "-\(param)=\(value)%"])
         try? await Task.sleep(nanoseconds: 25_000_000)
+    }
+
+    private func runCapture(_ args: [String]) -> String {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: args[0])
+        process.arguments = Array(args.dropFirst())
+        let outPipe = Pipe()
+        process.standardOutput = outPipe
+        process.standardError = Pipe()
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return String(data: outPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        } catch {
+            return ""
+        }
     }
 
     @discardableResult
