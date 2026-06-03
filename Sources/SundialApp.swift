@@ -23,6 +23,18 @@ struct SundialApp: App {
         // first tick so the correct preset is applied before any menu interaction.
         sched.start(state: state, controller: ctrl)
 
+        // Reconcile the login item with the persisted preference. Registration can be
+        // lost out from under us — e.g. the bundle moves, or a stale DerivedData
+        // registration gets cleared — and the toggle's onChange only fires on user
+        // interaction, so without this a "Launch at login: on" preference would
+        // silently stop taking effect. DEBUG builds never claim the login item
+        // (they run from an ephemeral DerivedData path); see SettingsView.
+        #if !DEBUG
+        if state.launchAtLogin, SMAppService.mainApp.status != .enabled {
+            try? SMAppService.mainApp.register()
+        }
+        #endif
+
         _appState  = StateObject(wrappedValue: state)
         controller = ctrl
         scheduler  = sched
