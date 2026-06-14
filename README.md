@@ -45,6 +45,8 @@ To keep this from being a mystery, Sundial won't let you create presets until it
 
 > Install via `./build.sh` (not by running a Debug build from Xcode) so launch-at-login binds the app in `/Applications` rather than a transient DerivedData path.
 
+Prefer not to build it yourself? Grab the latest `Sundial.app` from the [Releases](https://github.com/Id3arium/Sundial/releases) page, unzip it, and drag it to `/Applications`.
+
 ## First run
 
 1. Click the sun icon in the menu bar — Sundial opens to a **setup screen**.
@@ -61,3 +63,13 @@ To keep this from being a mystery, Sundial won't let you create presets until it
 | Night Shift | macOS Night Shift (CoreBrightness)                              |
 
 The scheduler picks the active preset for the current time and interpolates between presets for smooth transitions. On wake, it forces a full re-apply so the display state always matches the schedule.
+
+## Releasing
+
+To cut a release, bump `MARKETING_VERSION` in `project.yml`, commit, push, then run:
+
+```bash
+./release.sh
+```
+
+It reads the version from `project.yml`, refuses to run on a dirty or unpushed tree, builds a fresh `.app`, zips it, tags `v<version>`, and publishes a GitHub release with the zip attached and auto-generated notes.
