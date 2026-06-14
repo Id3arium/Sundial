@@ -9,6 +9,20 @@ struct PresetListView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
+                if sortedPresets.isEmpty {
+                    VStack(spacing: 6) {
+                        Text("No presets yet")
+                            .font(.subheadline.weight(.medium))
+                        Text("Add one to get started.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 20)
+                    .padding(.bottom, 8)
+                }
+
                 ForEach(sortedPresets) { preset in
                     PresetCardRow(
                         preset: preset,

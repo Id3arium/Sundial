@@ -99,12 +99,12 @@ class AppState: ObservableObject {
             return "Enter your monitor's display name (a partial match of the name shown in BetterDisplay)."
         }
         guard FileManager.default.isExecutableFile(atPath: cliPath) else {
-            return "BetterDisplay CLI not found at that path. Confirm BetterDisplay.app is installed and the path points to .../Contents/MacOS/BetterDisplay."
+            return "No BetterDisplay program found at that path. Make sure BetterDisplay is installed, then point this at the BetterDisplay binary inside it (the default path is usually correct)."
         }
         let controller = DDCController(cliPath: cliPath, displayName: trimmedName)
         let reachable = await controller.probe()
         guard reachable else {
-            return "Couldn't read brightness from a monitor matching \"\(trimmedName)\". Check the display name matches a connected monitor in BetterDisplay and that the monitor has DDC/CI enabled in its on-screen menu."
+            return "Couldn't read brightness from \"\(trimmedName)\". Make sure the name matches the one in BetterDisplay and that the monitor has DDC/CI enabled in its on-screen menu."
         }
         isSetUp = true
         save()

@@ -14,7 +14,7 @@ struct SetupView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Set up your monitor")
                         .font(.headline)
-                    Text("Sundial controls your monitor's hardware brightness and contrast through BetterDisplay. Point it at your display, then test the connection to get started.")
+                    Text("Sundial controls your monitor's hardware brightness and contrast through BetterDisplay.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -58,7 +58,7 @@ struct SetupView: View {
                 } label: {
                     HStack(spacing: 6) {
                         if testing { ProgressView().controlSize(.small) }
-                        Text(testing ? "Testing…" : "Test connection")
+                        Text(testing ? "Connecting…" : "Connect Monitor")
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -68,6 +68,9 @@ struct SetupView: View {
             }
             .padding(14)
         }
+        // Matches SettingsView's cap. The copy (intro + field hints + the longest
+        // error) is kept tight enough to fit the Connect Monitor button within this
+        // height; the ScrollView is a safety net for unusually tall content.
         .frame(maxHeight: 420)
     }
 
