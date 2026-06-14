@@ -6,10 +6,17 @@ class AppState: ObservableObject {
     @Published var presets: [Preset] = []
     @Published var schedule: [ScheduleEntry] = []
     @Published var activePresetID: UUID?
-    @Published var displayName: String = "M27Q"
+    @Published var displayName: String = ""
     @Published var cliPath: String = "/Applications/BetterDisplay.app/Contents/MacOS/BetterDisplay"
     @Published var applyOnWake: Bool = true
     @Published var launchAtLogin: Bool = false
+
+    /// True once the BetterDisplay path + display name have been verified against
+    /// real hardware (a DDC read succeeded). Until then, the menu bar shows the
+    /// setup screen instead of presets — Sundial can't control a monitor it can't
+    /// reach, and silently-failing sliders are a worse first-run than an honest gate.
+    /// Persisted so a returning user with a known-good setup skips onboarding.
+    @Published var isSetUp: Bool = false
 
     /// ID of the preset currently being live-previewed, if any.
     /// While non-nil, the Scheduler suppresses its own apply calls —
@@ -44,6 +51,7 @@ class AppState: ObservableObject {
         var cliPath: String
         var applyOnWake: Bool
         var launchAtLogin: Bool
+        var isSetUp: Bool?
     }
 
     func save() {
@@ -53,7 +61,8 @@ class AppState: ObservableObject {
             displayName: displayName,
             cliPath: cliPath,
             applyOnWake: applyOnWake,
-            launchAtLogin: launchAtLogin
+            launchAtLogin: launchAtLogin,
+            isSetUp: isSetUp
         )
         do {
             let data = try JSONEncoder().encode(config)
@@ -75,6 +84,31 @@ class AppState: ObservableObject {
         cliPath = config.cliPath
         applyOnWake = config.applyOnWake
         launchAtLogin = config.launchAtLogin
+        isSetUp = config.isSetUp ?? false
+    }
+
+    // MARK: - Setup validation
+
+    /// Verify the current BetterDisplay path + display name actually reach a
+    /// monitor by attempting a DDC brightness read. On success, flips `isSetUp`
+    /// to true (unlocking presets) and persists. Returns nil on success, or a
+    /// user-facing failure reason on error.
+    func validateSetup() async -> String? {
+        let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            return "Enter your monitor's display name (a partial match of the name shown in BetterDisplay)."
+        }
+        guard FileManager.default.isExecutableFile(atPath: cliPath) else {
+            return "BetterDisplay CLI not found at that path. Confirm BetterDisplay.app is installed and the path points to .../Contents/MacOS/BetterDisplay."
+        }
+        let controller = DDCController(cliPath: cliPath, displayName: trimmedName)
+        let reachable = await controller.probe()
+        guard reachable else {
+            return "Couldn't read brightness from a monitor matching \"\(trimmedName)\". Check the display name matches a connected monitor in BetterDisplay and that the monitor has DDC/CI enabled in its on-screen menu."
+        }
+        isSetUp = true
+        save()
+        return nil
     }
 
     private func seedDefaults() {

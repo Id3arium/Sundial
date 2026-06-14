@@ -12,6 +12,7 @@
 		3D674B0CA40951AFFB39E649 /* PresetListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D399FEBE540EF84416FC3F /* PresetListView.swift */; };
 		47CB386C700165E5FDEE4BCB /* NightShiftController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1355E9BC02A12AE670ED5D /* NightShiftController.swift */; };
 		6645D250FE45A6A79C002BCA /* ScheduleEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE6E37BFD5B324F653E13B9 /* ScheduleEntry.swift */; };
+		6F470DE1EDE70CAF32A58021 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFA14C86BC116A9E931E98B /* SetupView.swift */; };
 		8743D0E9BBB2149669DE0D67 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FAD6322321CD180A8085D6 /* AppState.swift */; };
 		9677DC4738EF1FF348C7134C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E6D2DCB95AD963660A91B0 /* SettingsView.swift */; };
 		E6DBCEB50C70393C22EB95E6 /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BC5FEF918359631ABE8F5C /* Scheduler.swift */; };
@@ -28,6 +29,7 @@
 		A6E6D2DCB95AD963660A91B0 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AB309781264F19131C8F56A4 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		AF802F84AF4D4A7E0B2239F7 /* Sundial.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sundial.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BDFA14C86BC116A9E931E98B /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		BF1355E9BC02A12AE670ED5D /* NightShiftController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightShiftController.swift; sourceTree = "<group>"; };
 		C8D399FEBE540EF84416FC3F /* PresetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetListView.swift; sourceTree = "<group>"; };
 		D82B9C28F5678446C399BE59 /* SundialApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SundialApp.swift; sourceTree = "<group>"; };
@@ -79,6 +81,7 @@
 				AB309781264F19131C8F56A4 /* MenuBarView.swift */,
 				C8D399FEBE540EF84416FC3F /* PresetListView.swift */,
 				A6E6D2DCB95AD963660A91B0 /* SettingsView.swift */,
+				BDFA14C86BC116A9E931E98B /* SetupView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -159,6 +162,7 @@
 				6645D250FE45A6A79C002BCA /* ScheduleEntry.swift in Sources */,
 				E6DBCEB50C70393C22EB95E6 /* Scheduler.swift in Sources */,
 				9677DC4738EF1FF348C7134C /* SettingsView.swift in Sources */,
+				6F470DE1EDE70CAF32A58021 /* SetupView.swift in Sources */,
 				EC8D596F3F6276971E5D4D80 /* SundialApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

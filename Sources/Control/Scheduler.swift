@@ -67,6 +67,7 @@ class Scheduler {
     /// dedupe so the re-apply always happens.
     func reapplyForCurrentTime() {
         guard let state, let controller else { return }
+        guard state.isSetUp else { return }
         guard let entry = activeEntry(in: state.schedule, presets: state.presets) else { return }
         guard let preset = state.preset(for: entry.presetID) else { return }
 
@@ -85,6 +86,7 @@ class Scheduler {
     /// toggling a schedule entry, editing a time. Respects ongoing previews.
     func recompute() {
         guard let state, let controller else { return }
+        guard state.isSetUp else { return }
         guard state.previewingPresetID == nil else { return }
         lastAppliedEntryID = nil
 
@@ -108,6 +110,7 @@ class Scheduler {
     /// even when brightness/contrast already match. Respects the user's
     /// "Re-apply preset after sleep/wake" setting and any active preview.
     private func forceApplyActive(state: AppState, controller: DDCController) {
+        guard state.isSetUp else { return }
         guard state.applyOnWake else { return }
         guard state.previewingPresetID == nil else { return }
 
@@ -130,6 +133,8 @@ class Scheduler {
     // MARK: - Tick
 
     private func tick(state: AppState, controller: DDCController) {
+        // No verified monitor yet — nothing to drive until onboarding completes.
+        guard state.isSetUp else { return }
         // Preview owns the monitor while active — don't fight it.
         guard state.previewingPresetID == nil else { return }
 

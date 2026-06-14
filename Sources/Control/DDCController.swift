@@ -53,6 +53,14 @@ class DDCController {
             && abs(contrast   - preset.hardwareContrast)   <= 1
     }
 
+    /// Probe whether the configured display is reachable over DDC by attempting
+    /// a raw brightness read (VCP 0x10). Used by setup validation to confirm the
+    /// CLI path + display name resolve to a real, controllable monitor before
+    /// unlocking presets. Returns true if the read returns a value.
+    func probe() async -> Bool {
+        readDDC(vcp: 0x10) != nil
+    }
+
     // MARK: - Private
 
     /// Read a raw DDC value from the monitor via VCP code. Returns the integer

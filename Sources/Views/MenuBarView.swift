@@ -15,19 +15,25 @@ struct MenuBarView: View {
                     .font(.system(size: 15, weight: .semibold))
                 Spacer()
 
-                if let preset = appState.preset(for: appState.activePresetID), !showSettings {
+                if let preset = appState.preset(for: appState.activePresetID), !showSettings, appState.isSetUp {
                     Text(preset.name)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
-                HeaderButton(
-                    icon: showSettings ? "arrow.left" : "gear",
-                    help: showSettings ? "Back to presets" : "Settings"
-                ) {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        showSettings.toggle()
-                        expandedPresetID = nil
+                // The gear only appears once setup is complete — before that the
+                // SetupView already exposes the path/name fields, so a Settings
+                // toggle would be redundant (and could strand the user on an empty
+                // settings panel with no way back to onboarding).
+                if appState.isSetUp {
+                    HeaderButton(
+                        icon: showSettings ? "arrow.left" : "gear",
+                        help: showSettings ? "Back to presets" : "Settings"
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            showSettings.toggle()
+                            expandedPresetID = nil
+                        }
                     }
                 }
             }
@@ -36,7 +42,9 @@ struct MenuBarView: View {
 
             Divider()
 
-            if showSettings {
+            if !appState.isSetUp {
+                SetupView()
+            } else if showSettings {
                 SettingsView()
             } else {
                 PresetListView(expandedPresetID: $expandedPresetID)
