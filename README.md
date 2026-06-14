@@ -21,6 +21,20 @@ Presets and schedule live in `config.json` under `~/Library/Application Support/
 - A monitor that supports DDC/CI (most external displays do)
 - For building: [`xcodegen`](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`) and Xcode
 
+## Monitor compatibility — please read
+
+> [!IMPORTANT]
+> **Sundial has only been tested on one monitor: a Gigabyte M27Q.** Your mileage will vary.
+
+Sundial controls brightness and contrast over **DDC/CI** (a VESA standard), driven through the BetterDisplay CLI. In principle that means it should work on most external monitors made in the last decade — but DDC support is uneven in practice, so there's no guarantee it works on yours. Common reasons it might not:
+
+- **DDC/CI is disabled** in the monitor's on-screen menu (it often ships off — look for a "DDC/CI" setting and enable it).
+- **The monitor ignores or mishandles the standard VCP codes** for brightness (`0x10`) / contrast (`0x12`) — some panels accept writes but don't honor them, or report wrong values on read.
+- **DDC over HDMI on Apple Silicon** is hit or miss depending on the display and cable. It can work (the M27Q does over HDMI on an M-series Mac) — but plenty of displays don't. DisplayPort / USB-C tends to be more reliable.
+- **Built-in laptop displays and most Apple displays** don't use DDC at all, so Sundial can't drive them.
+
+Because of this, Sundial **won't let you create presets until it has verified it can actually read your monitor over DDC**. On first launch it shows a setup screen: enter your BetterDisplay path and display name, hit **Test connection**, and presets unlock only if the read succeeds. If the test fails, the error explains the likely cause. If it works for a monitor not listed here, a note (or PR) is welcome.
+
 ## Build & install
 
 ```bash
@@ -39,9 +53,10 @@ Presets and schedule live in `config.json` under `~/Library/Application Support/
 
 ## First run
 
-1. Click the sun icon in the menu bar → **Settings**.
-2. Set the **BetterDisplay CLI path** (default: `/Applications/BetterDisplay.app/Contents/MacOS/BetterDisplay`) and the **display name** — a partial match of the monitor name shown in BetterDisplay.
-3. Edit the presets and schedule to taste. Sundial takes over from there.
+1. Click the sun icon in the menu bar — Sundial opens to a **setup screen**.
+2. Confirm the **BetterDisplay path** (default: `/Applications/BetterDisplay.app/Contents/MacOS/BetterDisplay`) and enter your **display name** — any partial match of the monitor name shown in BetterDisplay.
+3. Hit **Test connection**. If Sundial can read your monitor over DDC, presets unlock; otherwise the error tells you what to check (see [Monitor compatibility](#monitor-compatibility--please-read)).
+4. Edit the presets and schedule to taste. Sundial takes over from there. You can revisit the path/name later via the **gear** icon.
 
 ## How it works
 
