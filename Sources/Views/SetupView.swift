@@ -67,11 +67,13 @@ struct SetupView: View {
                 .disabled(testing)
             }
             .padding(14)
+            .measureContentHeight()
         }
-        // Matches SettingsView's cap. The copy (intro + field hints + the longest
-        // error) is kept tight enough to fit the Connect Monitor button within this
-        // height; the ScrollView is a safety net for unusually tall content.
-        .frame(maxHeight: 420)
+        // Concrete, self-sizing height — a maxHeight-only frame collapses to 0 inside
+        // MenuBarExtra(.window) on macOS 26. Matches SettingsView's cap; the copy is
+        // kept tight enough to fit the Connect Monitor button, and the ScrollView is
+        // a safety net for the longest error / unusually tall content.
+        .scrollContentHeight(cap: 420)
     }
 
     private func runTest() {

@@ -1,5 +1,17 @@
 import SwiftUI
 
+/// Fixed row heights so the panel cap is exact rather than measured/estimated.
+/// The viewport shows `expanded + collapsed` (one expanded card + one collapsed
+/// neighbor) before scrolling — see `cap` on the ScrollView below.
+private enum Row {
+    /// Collapsed card: name + subtitle + 10pt vertical padding top & bottom.
+    static let collapsed: CGFloat = 56
+    /// Expanded card: collapsed header + inline editor (time/toggle row, three
+    /// sliders, actions row) + its 12pt bottom padding. Measured from the rendered
+    /// card via a GeometryReader (settles at ~195pt).
+    static let expanded: CGFloat = 195
+}
+
 struct PresetListView: View {
     @EnvironmentObject var appState: AppState
     @Binding var expandedPresetID: UUID?
@@ -79,9 +91,13 @@ struct PresetListView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.accentColor)
             }
+            .measureContentHeight()
         }
-        // ≈ 1 × expanded row (254pt) + 1 × collapsed row (48pt) ≈ 302
-        .frame(maxHeight: 310)
+        // Concrete, self-sizing height — a maxHeight-only frame collapses to 0 inside
+        // MenuBarExtra(.window) on macOS 26. Cap = 1 expanded card + 1 collapsed card
+        // (heights pinned via Row above), so expanding a card shows itself + exactly one
+        // collapsed neighbor, then scrolls. Grows to fit content below the cap.
+        .scrollContentHeight(cap: Row.expanded + Row.collapsed)
         .scrollPosition(id: $scrollPosition)
         .onAppear { refreshSort() }
         .onChange(of: appState.presets.count) { refreshSort() }
@@ -205,6 +221,7 @@ private struct PresetCardRow: View {
             .padding(.vertical, 10)
             .opacity(preset.enabled ? 1.0 : 0.5)
         }
+        .frame(height: Row.collapsed)
     }
 
     private var subtitle: String {

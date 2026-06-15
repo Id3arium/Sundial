@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		24F93C7195E5FA70AD20E215 /* Preset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 796B2237EDA73B21F4AEF6D1 /* Preset.swift */; };
 		3587EA00266283414AC109D6 /* DDCController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D29394D153BF2C3A3F28FC /* DDCController.swift */; };
+		37A92850230ACF444AE71511 /* MeasuredScrollHeight.swift in Sources */ = {isa = PBXBuildFile; fileRef = B800F47557D7D13B064938FE /* MeasuredScrollHeight.swift */; };
 		3D674B0CA40951AFFB39E649 /* PresetListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D399FEBE540EF84416FC3F /* PresetListView.swift */; };
 		47CB386C700165E5FDEE4BCB /* NightShiftController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1355E9BC02A12AE670ED5D /* NightShiftController.swift */; };
 		6645D250FE45A6A79C002BCA /* ScheduleEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE6E37BFD5B324F653E13B9 /* ScheduleEntry.swift */; };
@@ -29,6 +30,7 @@
 		A6E6D2DCB95AD963660A91B0 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AB309781264F19131C8F56A4 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		AF802F84AF4D4A7E0B2239F7 /* Sundial.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sundial.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B800F47557D7D13B064938FE /* MeasuredScrollHeight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasuredScrollHeight.swift; sourceTree = "<group>"; };
 		BDFA14C86BC116A9E931E98B /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		BF1355E9BC02A12AE670ED5D /* NightShiftController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightShiftController.swift; sourceTree = "<group>"; };
 		C8D399FEBE540EF84416FC3F /* PresetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetListView.swift; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 		CC1E2C5CF2BDDA62373D9D63 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				B800F47557D7D13B064938FE /* MeasuredScrollHeight.swift */,
 				AB309781264F19131C8F56A4 /* MenuBarView.swift */,
 				C8D399FEBE540EF84416FC3F /* PresetListView.swift */,
 				A6E6D2DCB95AD963660A91B0 /* SettingsView.swift */,
@@ -155,6 +158,7 @@
 			files = (
 				8743D0E9BBB2149669DE0D67 /* AppState.swift in Sources */,
 				3587EA00266283414AC109D6 /* DDCController.swift in Sources */,
+				37A92850230ACF444AE71511 /* MeasuredScrollHeight.swift in Sources */,
 				E70B1926A2A67DF571C15E0C /* MenuBarView.swift in Sources */,
 				47CB386C700165E5FDEE4BCB /* NightShiftController.swift in Sources */,
 				24F93C7195E5FA70AD20E215 /* Preset.swift in Sources */,
