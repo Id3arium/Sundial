@@ -99,7 +99,16 @@ struct PresetListView: View {
         // collapsed neighbor, then scrolls. Grows to fit content below the cap.
         .scrollContentHeight(cap: Row.expanded + Row.collapsed)
         .scrollPosition(id: $scrollPosition)
-        .onAppear { refreshSort() }
+        .onAppear {
+            refreshSort()
+            // Scroll the currently-active preset into view on open. Deferred so the
+            // sort + layout settle before the scroll target is applied.
+            if let active = appState.activePresetID {
+                DispatchQueue.main.async {
+                    scrollPosition = active
+                }
+            }
+        }
         .onChange(of: appState.presets.count) { refreshSort() }
     }
 
