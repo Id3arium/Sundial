@@ -16,9 +16,9 @@ struct PresetListView: View {
     @EnvironmentObject var appState: AppState
     @Binding var expandedPresetID: UUID?
     @State private var sortedPresets: [Preset] = []
-    @State private var scrollPosition: UUID?
 
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(spacing: 0) {
                 if sortedPresets.isEmpty {
@@ -51,11 +51,11 @@ struct PresetListView: View {
                             if wasExpanded, appState.previewingPresetID == preset.id {
                                 endPreview()
                             }
-                            // Scroll expanded row into view after animation settles.
+                            // Scroll expanded row to the top of the viewport after the
+                            // expand animation settles.
                             if !wasExpanded {
-                                scrollPosition = nil
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                    withAnimation { scrollPosition = preset.id }
+                                    withAnimation { proxy.scrollTo(preset.id, anchor: .top) }
                                 }
                             }
                         }
@@ -80,7 +80,7 @@ struct PresetListView: View {
                         expandedPresetID = newPreset.id
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        withAnimation { scrollPosition = newPreset.id }
+                        withAnimation { proxy.scrollTo(newPreset.id, anchor: .top) }
                     }
                 } label: {
                     Label("Add Preset", systemImage: "plus")
@@ -98,18 +98,18 @@ struct PresetListView: View {
         // (heights pinned via Row above), so expanding a card shows itself + exactly one
         // collapsed neighbor, then scrolls. Grows to fit content below the cap.
         .scrollContentHeight(cap: Row.expanded + Row.collapsed)
-        .scrollPosition(id: $scrollPosition)
         .onAppear {
             refreshSort()
-            // Scroll the currently-active preset into view on open. Deferred so the
-            // sort + layout settle before the scroll target is applied.
+            // Scroll the currently-active preset to the top of the viewport on open.
+            // Deferred so the sort + layout settle before the scroll target is applied.
             if let active = appState.activePresetID {
                 DispatchQueue.main.async {
-                    scrollPosition = active
+                    proxy.scrollTo(active, anchor: .top)
                 }
             }
         }
         .onChange(of: appState.presets.count) { refreshSort() }
+        }
     }
 
     private func endPreview() {
